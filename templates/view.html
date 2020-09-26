@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            text-align: left;
+        }
+    </style>
+    <title>
+        Archive Stories
+    </title>
+</head>
+<body>
+    <h1>Здесь выводится история запросов:</h1>
+    {% for item in values %}
+        <p>Sentence: {{item.sentence}}, Keywords: {{item.keywords}}</p>
+    {% endfor %}
+</body>
+</html>

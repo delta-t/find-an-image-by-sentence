@@ -19,7 +19,7 @@ RUN apt-get update \
         libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install flask gunicorn flask_wtf numpy opencv-python Pillow flickrapi rutermextract
+RUN pip install flask flask_sqlalchemy gunicorn flask_wtf Pillow flickrapi rutermextract
 
 
 RUN mkdir /app
