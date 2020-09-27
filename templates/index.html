@@ -16,7 +16,7 @@
     <form method="POST" action="/" enctype="multipart/form-data">
         {{ form.hidden_tag() }}
         {{ form.input_data.label }} {{ form.input_data(size=100) }}
-        <input type="submit" value="Найти">
+        <input type="submit" value="Сгенерировать">
     </form>
     <h2>И здесь появятся изображения, найденные по ключевым словам из него:</h2>
     {% for hist in list_images %}
