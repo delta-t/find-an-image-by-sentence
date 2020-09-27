@@ -3,9 +3,9 @@ services:
     flask:
         environment: 
             - FLASK_APP=main.py
-            - FLASK_ENV=development
-            - FLASK_DEBUG=1
-            - PYTHONUNBUFFERED=True
+            # - FLASK_ENV=development
+            # - FLASK_DEBUG=1
+            # - PYTHONUNBUFFERED=True
         build: .
         
         ports: 
