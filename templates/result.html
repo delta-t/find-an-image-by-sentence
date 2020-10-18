@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        form {
+            text-align: left;
+        }
+    </style>
+    <title>
+        Stories Views
+    </title>
+</head>
+<body>
+    <h2>И здесь появятся изображения, найденные по ключевым словам из него:</h2>
+        {% for hist in list_images %}
+            <img src="{{url_for('static', filename=hist)}}" alt="{{hist}}" style="width: auto;">
+        {% endfor %}
+    <h2>Также Вы можете посмотреть историю запросов (введённые предложения и ключевые слова из них) перейдя во вкладку /view</h2>
+</body>
+</html>

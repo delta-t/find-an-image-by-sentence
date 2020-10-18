@@ -20,20 +20,16 @@ from global_variables import *
 app = Flask(__name__)
 app.config.update(dict(
     SECRET_KEY=APP_SECRET_KEY,
-    WTF_CSRF_SECRET_KEY=APP_WTF_CSRF_SECRET_KEY
+    WTF_CSRF_SECRET_KEY=APP_WTF_CSRF_SECRET_KEY,
+    UPLOAD_FOLDER=UPLOAD_FOLDER,
+    SQLALCHEMY_DATABASE_URI=DATABASE_URI,
+    SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    MAX_CONTENT_LENGTH=16 * 1024 * 1024,
 ))
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URI
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
-
-# clear image folder before starting
-for img in os.listdir(app.config['UPLOAD_FOLDER']):
-    if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'], img)):
-        os.remove(os.path.join(app.config['UPLOAD_FOLDER'], img))
 
 # database initialization
 db = SQLAlchemy(app)
+
 
 class SentencesAndKeywords(db.Model):
     _id = db.Column("sentence_id", db.Integer, primary_key=True)
@@ -55,6 +51,12 @@ term_extractor = TermExtractor()
 # font setting up
 font = ImageFont.truetype(FONTPATH, 64)
 
+
+def clear_log():
+    # clear image folder before starting
+    for img in os.listdir(app.config['UPLOAD_FOLDER']):
+        if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'], img)):
+            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], img))
 
 def insert_to_db(full_text: str, terms: str) -> None:
     '''
@@ -125,6 +127,7 @@ def greetings_page():
     '''
     form = MyForm()
     if form.validate_on_submit():
+        clear_log()
         text = form.input_data.data
         terms = []
         for term in term_extractor(text, nested=True):
@@ -134,7 +137,7 @@ def greetings_page():
         insert_to_db(text, terms)
 
         show = ['images/' + f for f in os.listdir('./static/images') if os.path.isfile(os.path.join('./static/images', f))]
-        return render_template('index.html', form=form, list_images=show)
+        return render_template('result.html', list_images=show)
     return render_template('index.html', form=form)
 
 @app.route('/view')
