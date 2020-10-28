@@ -71,12 +71,51 @@ def insert_to_db(full_text: str, terms: list) -> None:
         db.session.commit()
 
 
-def get_images(keyword: str, full_text: str) -> None:
+async def async_get_images(terms: dict):
+    tasks = []
+
+    async with aiohttp.ClientSession() as session:
+        for key, value in terms.items():
+            if key == 'full_text':
+                continue
+
+            for url in value:
+                task = asyncio.create_task(fetch_content(url, session, key, terms['full_text']))
+                tasks.append(task)
+
+        await asyncio.gather(*tasks)
+
+
+async def fetch_content(url, session, keyword, full_text):
+    async with session.get(url, allow_redirects=True) as response:
+        data = await response.read()
+        save_image(data, keyword, full_text)
+
+
+def save_image(data, keyword, full_text):
+    filepath = os.path.join('./', f'static/images/{keyword}_{random()}.jpg')
+
+    with open(filepath, 'wb') as file:
+        file.write(data)
+
+    # Resize the image and insert the full text, then overwrite it
+    image = Image.open(filepath)
+    image = image.resize((1920, 1080), Image.ANTIALIAS).convert('RGB')
+    draw_description(image, full_text)
+    image.save(filepath)
+
+
+def draw_description(img_pil, description: str) -> None:
+    draw = ImageDraw.Draw(img_pil)
+    draw.text((20, 1000), description, font=font, fill=(B, G, R, A))
+
+
+def get_links(keyword: str) -> list:
     """
-        keyword - sting variable
-        full_text - string variable
-        Download images by keyword and drawing full_text on its
-    """
+            keyword - sting variable
+            full_text - string variable
+            Download images by keyword and drawing full_text on its
+        """
     photos = flickr.walk(
         text=keyword,
         tag_mode='all',
@@ -95,43 +134,7 @@ def get_images(keyword: str, full_text: str) -> None:
         if correct_urls > 5:  # six images are enough
             break
 
-    # Download image from the url and save it
-    asyncio.run(get_image_by_keyword(urls, keyword, full_text))
-
-
-async def get_image_by_keyword(urls, keyword, full_text):
-    tasks = []
-
-    async with aiohttp.ClientSession() as session:
-        for url in urls:
-            task = asyncio.create_task(fetch_content(url, session, keyword, full_text))
-            tasks.append(task)
-
-        await asyncio.gather(*tasks)
-
-
-async def fetch_content(url, session, keyword, full_text):
-    async with session.get(url, allow_redirects=True) as response:
-        data = await response.read()
-        save_image(data, keyword, full_text)
-
-
-def save_image(data, keyword, full_text):
-    filepath = os.path.join('./', f'static/images/{keyword}_{random()}.jpg')
-    # filename = f'static/images/{keyword}_{i}.jpg'
-    with open(filepath, 'wb') as file:
-        file.write(data)
-
-    # Resize the image and insert the full text, then overwrite it
-    image = Image.open(filepath)
-    image = image.resize((1920, 1080), Image.ANTIALIAS).convert('RGB')
-    draw_description(image, full_text)
-    image.save(filepath)
-
-
-def draw_description(img_pil, description: str) -> None:
-    draw = ImageDraw.Draw(img_pil)
-    draw.text((20, 1000), description, font=font, fill=(B, G, R, A))
+    return urls
 
 
 class MyForm(FlaskForm):
@@ -155,11 +158,14 @@ def greetings_page():
     if form.validate_on_submit():
         clear_log()
         text = form.input_data.data
-        terms = []
+        terms_ = {'full_text': text}
         for term in term_extractor(text, nested=True):
-            get_images(term.normalized, text)
-            terms.append(term.normalized)
+            if term.normalized not in terms_:
+                terms_[term.normalized] = get_links(term.normalized)
 
+        # Download image from the url and save it
+        asyncio.run(async_get_images(terms_))
+        terms = [term for keyword, term in terms_.items() if keyword != 'full_text']
         insert_to_db(text, terms)
 
         show = ['images/' + f for f in os.listdir('./static/images') if
